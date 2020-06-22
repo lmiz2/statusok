@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sanathp/statusok/database"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/sanathp/statusok/database"
 )
 
 var (
@@ -260,6 +262,13 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 
 	getResponse, respErr := client.Do(request)
 
+	//get ResponseBody shs
+	rbody, _ := ioutil.ReadAll(getResponse.Body)
+	fmt.Printf("%S\n", getResponse.Header)
+	fmt.Printf("debug : %s\n", rbody)
+
+	defer getResponse.Body.Close()
+
 	if respErr != nil {
 		//Request failed . Add error info to database
 		var statusCode int
@@ -322,7 +331,6 @@ func convertResponseToString(resp *http.Response) string {
 	if bufErr != nil {
 		return " "
 	}
-
 	return buf.String()
 }
 
