@@ -1,0 +1,19 @@
+version: '3'
+services:
+  statusok:
+    build: .
+    volumes:
+      - /path/to/config/folder:/config
+    depends_on:
+      - influxdb
+  influxdb:
+    image: tutum/influxdb:0.9
+    environment:
+      - PRE_CREATE_DB="statusok" 
+    ports:
+      - 8093:8083 
+      - 8096:8086
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000

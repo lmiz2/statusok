@@ -1,0 +1,19 @@
+{
+"database":{
+	"influxDb":{
+		"host":"influxdb",
+		"port":8086,
+		"databaseName":"statusok",
+		"username":"user",
+		"password":""
+	}
+},
+    "requests":[
+        {
+            "url":"http://m.lalavla.com",
+            "requestType":"GET",
+            "checkEvery":10,    
+            "responseTime":800
+        }
+    ]
+}
