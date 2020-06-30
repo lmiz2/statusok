@@ -43,6 +43,7 @@ type RequestConfig struct {
 	ResponseCode int               `json:"responseCode"`
 	ResponseTime int64             `json:"responseTime"`
 	CheckEvery   time.Duration     `json:"checkEvery"`
+	AdvancedOpt  map[string]string `json:"advanced"`
 }
 
 //Set Id for request
@@ -130,6 +131,7 @@ func StartMonitoring() {
 	go listenToRequestChannel()
 
 	for _, requestConfig := range RequestsList {
+		fmt.Print("requestConfig : ", requestConfig) // config parsing 디버그
 		go createTicker(requestConfig)
 	}
 }

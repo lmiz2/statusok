@@ -1,7 +1,7 @@
 {
     "database":{
         "influxDb":{
-            "host":"influxdb",
+            "host":"localhost",
             "port":8086,
             "databaseName":"statusok",
             "username":"user",
@@ -16,6 +16,10 @@
                 "responseTime":800,
                 "headers":{
                     "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+                }
+                ,"Advanced":{
+                    "contains" : "true",
+                    "count" : "2"
                 }
             }
         ]
