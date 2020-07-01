@@ -31,7 +31,7 @@ type NotifyWhen struct {
 }
 
 func main() {
-
+	//dev branch
 	//Cli tool setup to get config file path from parameters
 	app := cli.NewApp()
 	app.Name = "StatusOk"
