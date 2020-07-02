@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sanathp/statusok/database"
@@ -266,9 +267,13 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 
 	//get ResponseBody shs
 	rbody, _ := ioutil.ReadAll(getResponse.Body)
-	fmt.Printf("%S\n", getResponse.Header)
-	fmt.Printf("debug : %s\n", rbody)
-
+	var bodystr string = ""
+	if len(rbody) > 0 {
+		bodystr = string(rbody[:])
+	}
+	println(bodystr)
+	println(len(rbody))
+	println(strings.Contains(bodystr, "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\" defer></script>"))
 	defer getResponse.Body.Close()
 
 	if respErr != nil {
