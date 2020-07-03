@@ -265,17 +265,6 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 
 	getResponse, respErr := client.Do(request)
 
-	//get ResponseBody shs
-	rbody, _ := ioutil.ReadAll(getResponse.Body)
-	var bodystr string = ""
-	if len(rbody) > 0 {
-		bodystr = string(rbody[:])
-	}
-	println(bodystr)
-	println(len(rbody))
-	println(strings.Contains(bodystr, "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\" defer></script>"))
-	defer getResponse.Body.Close()
-
 	if respErr != nil {
 		//Request failed . Add error info to database
 		var statusCode int
@@ -313,6 +302,17 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 	}
 
 	elapsed := time.Since(start)
+
+	//get ResponseBody shs
+	rbody, _ := ioutil.ReadAll(getResponse.Body)
+	var bodystr string = ""
+	if len(rbody) > 0 {
+		bodystr = string(rbody[:])
+	}
+	println(bodystr)
+	println(len(rbody))
+	println(strings.Contains(bodystr, "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\" defer></script>"))
+	defer getResponse.Body.Close()
 
 	//Request succesfull . Add infomartion to Database
 	go database.AddRequestInfo(database.RequestInfo{
