@@ -298,12 +298,12 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 	var saveBodyStr = ""
 	var mtCnt = 0
 
-	for i := 0; i < len(requestConfig.AdvancedOpt); i++ {
-		advMap := requestConfig.AdvancedOpt[i]
+	for _, advMap := range requestConfig.AdvancedOpt {
 		mtCnt = strings.Count(bodystr, advMap.MatchExpression)
 		if advMap.SaveBodyAlways == "true" {
 			saveBodyStr = bodystr
 		}
+		fmt.Printf("\"%s\" match count : %d\n", advMap.MatchExpression, mtCnt)
 	}
 
 	f, errf := os.OpenFile("./requestbody.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, os.FileMode(0644))
