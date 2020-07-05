@@ -51,9 +51,9 @@ type RequestConfig struct {
 }
 
 type AdvancedOption struct {
-	checkType       string `json:"checkType"`
-	matchExpression string `json:"matchExpression"`
-	saveBodyAlways  string `json:"saveBodyAlways"`
+	CheckType       string `json:"checkType"`
+	MatchExpression string `json:"matchExpression"`
+	SaveBodyAlways  string `json:"saveBodyAlways"`
 }
 
 //Set Id for request
@@ -89,18 +89,17 @@ func (requestConfig *RequestConfig) Validate() error {
 		requestConfig.CheckEvery = defTime
 	}
 
-	fmt.Println(requestConfig)
-	for _, advMap := range requestConfig.AdvancedOpt {
-		if advMap.checkType == "" || (advMap.checkType != checkContains && advMap.checkType != checkRegularExp) {
-			return errors.New("invalid checkType. checkType must be \"" + checkContains + "\" or \"" + checkRegularExp + "\"")
+	for i, advMap := range requestConfig.AdvancedOpt {
+		if advMap.CheckType == "" || (advMap.CheckType != checkContains && advMap.CheckType != checkRegularExp) {
+			return errors.New("invalid CheckType. CheckType must be \"" + checkContains + "\" or \"" + checkRegularExp + "\"")
 		} else {
-			if advMap.matchExpression == "" {
-				return errors.New("matchExpression cannot be empty")
+			if advMap.MatchExpression == "" {
+				return errors.New("MatchExpression cannot be empty")
 			}
-			if advMap.checkType == checkContains {
-				fmt.Printf("set Advanced options : %s\n", checkContains)
-			} else if advMap.checkType == checkRegularExp {
-				fmt.Printf("set Advanced options : %s\n", checkRegularExp)
+			if advMap.CheckType == checkContains {
+				fmt.Printf("%s #%d set Advanced option : %s\n", requestConfig.Url, i, checkContains)
+			} else if advMap.CheckType == checkRegularExp {
+				fmt.Printf("%s #%d set Advanced option : %s\n", requestConfig.Url, i, checkRegularExp)
 			}
 			// if(advMap["matchCount"] == ""){
 			// 	return errors.New("matchCount cannot be Zero or")
@@ -295,25 +294,16 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 	getResponse, respErr := client.Do(request)
 
 	//get ResponseBody shs
-	// rbody, _ := ioutil.ReadAll(getResponse.Body)
-	// defer getResponse.Body.Close()
-	// if len(rbody) > 0 {
-	// 	bodystr = string(rbody[:])
-	// }
-	// println(len(rbody))
-	// println(strings.Contains(bodystr, "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\" defer></script>"))
 	var bodystr string = convertResponseToString(getResponse)
 	var saveBodyStr = ""
 	var mtCnt = 0
-	// println(bodystr) // debuging
 
 	for i := 0; i < len(requestConfig.AdvancedOpt); i++ {
 		advMap := requestConfig.AdvancedOpt[i]
-		mtCnt = strings.Count(bodystr, advMap.matchExpression)
-		if advMap.saveBodyAlways == "true" {
+		mtCnt = strings.Count(bodystr, advMap.MatchExpression)
+		if advMap.SaveBodyAlways == "true" {
 			saveBodyStr = bodystr
 		}
-		fmt.Println(mtCnt)
 	}
 
 	f, errf := os.OpenFile("./requestbody.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, os.FileMode(0644))
