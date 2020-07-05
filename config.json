@@ -17,9 +17,39 @@
                 "headers":{
                     "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
                 }
-                ,"Advanced":{
-                    "contains" : "true",
-                    "count" : "2"
+                ,"Advanced":[
+                    {
+                        "checkType" : "contains",
+                        "matchExpression" : "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\" defer></script>"
+                    },
+                    {
+                        "checkType" : "contains",
+                        "matchExpression" : "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\"  22 defer></script>"
+                    }
+                ]
+            },
+            {
+                "url":"https://api.lalavla.com/api/prd/product/list/best",
+                "requestType":"POST",
+                "checkEvery":10,    
+                "responseTime":800,
+                "headers":{
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+                }
+                ,"Advanced":[
+                    {
+                    "checkType" : "contains",
+                    "matchExpression" : "BUY_LIMIT",
+                    "saveBodyAlways"  : "true"
+                    }
+                ]
+                ,"formParams":{
+                    "BRND_ID": "",
+                    "CTG_ID": "C000000",
+                    "END_NUM": "20",
+                    "SORT_STD": "F",
+                    "START_NUM": "1"
                 }
             }
         ]

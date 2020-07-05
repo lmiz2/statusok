@@ -87,6 +87,7 @@ func (influxDb InfluxDb) AddRequestInfo(requestInfo RequestInfo) error {
 	fields := map[string]interface{}{
 		"responseTime": requestInfo.ResponseTime,
 		"responseCode": requestInfo.ResponseCode,
+		"responseBody": requestInfo.ResponseBody,
 	}
 
 	bps, err := client.NewBatchPoints(client.BatchPointsConfig{

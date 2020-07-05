@@ -1,12 +1,12 @@
 package requests
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -29,6 +29,9 @@ const (
 	FormContentType = "application/x-www-form-urlencoded"
 	JsonContentType = "application/json"
 
+	checkContains   = "contains"
+	checkRegularExp = "regex"
+
 	DefaultTime         = "300s"
 	DefaultResponseCode = http.StatusOK
 	DefaultConcurrency  = 1
@@ -44,7 +47,13 @@ type RequestConfig struct {
 	ResponseCode int               `json:"responseCode"`
 	ResponseTime int64             `json:"responseTime"`
 	CheckEvery   time.Duration     `json:"checkEvery"`
-	AdvancedOpt  map[string]string `json:"advanced"`
+	AdvancedOpt  []AdvancedOption  `json:"Advanced"`
+}
+
+type AdvancedOption struct {
+	checkType       string `json:"checkType"`
+	matchExpression string `json:"matchExpression"`
+	saveBodyAlways  string `json:"saveBodyAlways"`
 }
 
 //Set Id for request
@@ -78,6 +87,26 @@ func (requestConfig *RequestConfig) Validate() error {
 	if requestConfig.CheckEvery == 0 {
 		defTime, _ := time.ParseDuration(DefaultTime)
 		requestConfig.CheckEvery = defTime
+	}
+
+	fmt.Println(requestConfig)
+	for _, advMap := range requestConfig.AdvancedOpt {
+		if advMap.checkType == "" || (advMap.checkType != checkContains && advMap.checkType != checkRegularExp) {
+			return errors.New("invalid checkType. checkType must be \"" + checkContains + "\" or \"" + checkRegularExp + "\"")
+		} else {
+			if advMap.matchExpression == "" {
+				return errors.New("matchExpression cannot be empty")
+			}
+			if advMap.checkType == checkContains {
+				fmt.Printf("set Advanced options : %s\n", checkContains)
+			} else if advMap.checkType == checkRegularExp {
+				fmt.Printf("set Advanced options : %s\n", checkRegularExp)
+			}
+			// if(advMap["matchCount"] == ""){
+			// 	return errors.New("matchCount cannot be Zero or")
+			// }
+		}
+
 	}
 
 	return nil
@@ -132,7 +161,7 @@ func StartMonitoring() {
 	go listenToRequestChannel()
 
 	for _, requestConfig := range RequestsList {
-		fmt.Print("requestConfig : ", requestConfig) // config parsing 디버그
+		// fmt.Print("requestConfig : ", requestConfig) // config parsing debuging
 		go createTicker(requestConfig)
 	}
 }
@@ -265,6 +294,36 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 
 	getResponse, respErr := client.Do(request)
 
+	//get ResponseBody shs
+	// rbody, _ := ioutil.ReadAll(getResponse.Body)
+	// defer getResponse.Body.Close()
+	// if len(rbody) > 0 {
+	// 	bodystr = string(rbody[:])
+	// }
+	// println(len(rbody))
+	// println(strings.Contains(bodystr, "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\" defer></script>"))
+	var bodystr string = convertResponseToString(getResponse)
+	var saveBodyStr = ""
+	var mtCnt = 0
+	// println(bodystr) // debuging
+
+	for i := 0; i < len(requestConfig.AdvancedOpt); i++ {
+		advMap := requestConfig.AdvancedOpt[i]
+		mtCnt = strings.Count(bodystr, advMap.matchExpression)
+		if advMap.saveBodyAlways == "true" {
+			saveBodyStr = bodystr
+		}
+		fmt.Println(mtCnt)
+	}
+
+	f, errf := os.OpenFile("./requestbody.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, os.FileMode(0644))
+	if errf != nil {
+		panic(errf)
+	}
+	br := bufio.NewWriter(f)
+	br.WriteString(bodystr)
+	br.Flush()
+
 	if respErr != nil {
 		//Request failed . Add error info to database
 		var statusCode int
@@ -278,7 +337,7 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 			Url:          requestConfig.Url,
 			RequestType:  requestConfig.RequestType,
 			ResponseCode: statusCode,
-			ResponseBody: convertResponseToString(getResponse),
+			ResponseBody: bodystr,
 			Reason:       database.ErrDoRequest,
 			OtherInfo:    respErr.Error(),
 		})
@@ -294,7 +353,7 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 			Url:          requestConfig.Url,
 			RequestType:  requestConfig.RequestType,
 			ResponseCode: getResponse.StatusCode,
-			ResponseBody: convertResponseToString(getResponse),
+			ResponseBody: bodystr,
 			Reason:       errResposeCode(getResponse.StatusCode, requestConfig.ResponseCode),
 			OtherInfo:    "",
 		})
@@ -303,23 +362,13 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 
 	elapsed := time.Since(start)
 
-	//get ResponseBody shs
-	rbody, _ := ioutil.ReadAll(getResponse.Body)
-	var bodystr string = ""
-	if len(rbody) > 0 {
-		bodystr = string(rbody[:])
-	}
-	println(bodystr)
-	println(len(rbody))
-	println(strings.Contains(bodystr, "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\" defer></script>"))
-	defer getResponse.Body.Close()
-
 	//Request succesfull . Add infomartion to Database
 	go database.AddRequestInfo(database.RequestInfo{
 		Id:                   requestConfig.Id,
 		Url:                  requestConfig.Url,
 		RequestType:          requestConfig.RequestType,
 		ResponseCode:         getResponse.StatusCode,
+		ResponseBody:         saveBodyStr,
 		ResponseTime:         elapsed.Nanoseconds() / 1000000,
 		ExpectedResponseTime: requestConfig.ResponseTime,
 	})
