@@ -20,7 +20,18 @@
                 ,"Advanced":[
                     {
                         "checkType" : "contains",
-                        "matchExpression" : "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\" defer></script>"
+                        "matchExpression" : "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\" defer></script>",
+                        "warningLevelRanges" : [
+                            {
+                                "from" : 0,
+                                "to"   : 30,
+                                "warningLevel" : 0
+                            },
+                            {
+                                "from" : 30,
+                                "warningLevel" : 1
+                            }
+                        ]
                     },
                     {
                         "checkType" : "contains",

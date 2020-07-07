@@ -51,9 +51,18 @@ type RequestConfig struct {
 }
 
 type AdvancedOption struct {
-	CheckType       string `json:"checkType"`
-	MatchExpression string `json:"matchExpression"`
-	SaveBodyAlways  string `json:"saveBodyAlways"`
+	CheckType          string                    `json:"checkType"`
+	MatchExpression    string                    `json:"matchExpression"`
+	SaveBodyAlways     string                    `json:"saveBodyAlways"`
+	WarningLevelRanges []WarningLevelRangeOption `json:"warningLevelRanges"`
+}
+
+type WarningLevelRangeOption struct {
+	From         int `json: "from"`
+	To           int `json: "to"`
+	Over         int `json: "over"`
+	Lessthan     int `json: "lessthan"`
+	WarningLevel int `json: "warningLevel"`
 }
 
 //Set Id for request
