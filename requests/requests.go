@@ -58,11 +58,11 @@ type AdvancedOption struct {
 }
 
 type WarningLevelRangeOption struct {
-	From         int `json: "from"`
-	To           int `json: "to"`
-	Over         int `json: "over"`
-	Lessthan     int `json: "lessthan"`
-	WarningLevel int `json: "warningLevel"`
+	From         string `json:"from"`
+	To           string `json:"to"`
+	Over         string `json:"over"`
+	Lessthan     string `json:"lessthan"`
+	WarningLevel int    `json:"warningLevel"`
 }
 
 //Set Id for request
@@ -98,6 +98,7 @@ func (requestConfig *RequestConfig) Validate() error {
 		requestConfig.CheckEvery = defTime
 	}
 
+	// validation for advanced settings
 	for i, advMap := range requestConfig.AdvancedOpt {
 		if advMap.CheckType == "" || (advMap.CheckType != checkContains && advMap.CheckType != checkRegularExp) {
 			return errors.New("invalid CheckType. CheckType must be \"" + checkContains + "\" or \"" + checkRegularExp + "\"")
@@ -113,6 +114,7 @@ func (requestConfig *RequestConfig) Validate() error {
 			// if(advMap["matchCount"] == ""){
 			// 	return errors.New("matchCount cannot be Zero or")
 			// }
+			fmt.Println(advMap.WarningLevelRanges)
 		}
 
 	}
@@ -120,7 +122,7 @@ func (requestConfig *RequestConfig) Validate() error {
 	return nil
 }
 
-//Initialize data from config file and check all requests
+//RequestsInit Initialize data from config file and check all requests
 func RequestsInit(data []RequestConfig, concurrency int) {
 	RequestsList = data
 
