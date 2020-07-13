@@ -25,11 +25,12 @@
                             {
                                 "from" : "0",
                                 "to"   : "30",
-                                "warningLevel" : 0
+                                "warningLevel" : "0"
                             },
                             {
                                 "from" : "30",
-                                "warningLevel" : 1
+                                "lessthan" : "60",
+                                "warningLevel" : "1"
                             }
                         ]
                     },

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -62,7 +63,7 @@ type WarningLevelRangeOption struct {
 	To           string `json:"to"`
 	Over         string `json:"over"`
 	Lessthan     string `json:"lessthan"`
-	WarningLevel int    `json:"warningLevel"`
+	WarningLevel string `json:"warningLevel"`
 }
 
 //Set Id for request
@@ -114,12 +115,37 @@ func (requestConfig *RequestConfig) Validate() error {
 			// if(advMap["matchCount"] == ""){
 			// 	return errors.New("matchCount cannot be Zero or")
 			// }
-			fmt.Println(advMap.WarningLevelRanges)
+			isValidRange := true
+			for i, rangeMap := range advMap.WarningLevelRanges {
+				fmt.Printf("%d : %+v", i, rangeMap)
+				if isNumber(rangeMap.From) == isNumber(rangeMap.Over) {
+					isValidRange = false
+				} else if isNumber(rangeMap.To) == isNumber(rangeMap.Lessthan) {
+					isValidRange = false
+				} else if !isNumber(rangeMap.WarningLevel) {
+					isValidRange = false
+				}
+				// TODO : 작은값 ~ 큰값순으로 입력되는지 validation하기.
+			}
+			if !isValidRange {
+				return errors.New(
+					"range option must be like below form :\n" +
+						"{\n" +
+						"  [from|over] : \"[0-9]+\", \n" +
+						"  [to|lessthan] : \"[0-9]+\", \n" +
+						"  warningLevel : [0-9]+ \n" +
+						"}")
+			}
 		}
 
 	}
 
 	return nil
+}
+
+func isNumber(str string) bool {
+	match, _ := regexp.Match("^[0-9]+$", []byte(str))
+	return match
 }
 
 //RequestsInit Initialize data from config file and check all requests
