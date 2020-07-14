@@ -24,11 +24,11 @@
                         "warningLevelRanges" : [
                             {
                                 "from" : "0",
-                                "to"   : "30",
+                                "to"   : "31",
                                 "warningLevel" : "0"
                             },
                             {
-                                "from" : "31",
+                                "from" : "32",
                                 "to" : "60",
                                 "warningLevel" : "1"
                             }

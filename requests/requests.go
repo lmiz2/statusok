@@ -110,39 +110,33 @@ func (requestConfig *RequestConfig) Validate() error {
 			} else if advMap.CheckType == checkRegularExp {
 				fmt.Printf("%s #%d set Advanced option : %s\n", requestConfig.Url, i, checkRegularExp)
 			}
-			// if(advMap["matchCount"] == ""){
-			// 	return errors.New("matchCount cannot be Zero or")
-			// }
-			isInvalidRange := false
-			isOverlapRange := false
+
 			rangeValueMap := make(map[int]string)
 			for i, rangeMap := range advMap.WarningLevelRanges {
 				if !isNumber(rangeMap.From) || !isNumber(rangeMap.To) || !isNumber(rangeMap.WarningLevel) {
-					isInvalidRange = true
-					break
+					return errors.New(
+						"range option must be like below form :\n" +
+							"{\n" +
+							"  from         : \"[0-9]+\", \n" +
+							"  to           : \"[0-9]+\", \n" +
+							"  warningLevel : \"[0-9]+\" \n" +
+							"}")
 				}
 
 				fromVal, _ := strconv.Atoi(rangeMap.From)
 				toVal, _ := strconv.Atoi(rangeMap.To)
+
+				if fromVal >= toVal {
+					return errors.New("from value must be greater than to value")
+				}
+
 				for j := fromVal; j <= toVal; j++ {
 					if rangeValueMap[j] != "" {
-						return errors.New("range value Overlaped : " + strconv.Itoa(j))
+						return errors.New("range value Overlapped on " + strconv.Itoa(j))
 					} else {
 						rangeValueMap[j] = strconv.Itoa(i)
 					}
 				}
-			}
-			if isInvalidRange {
-				return errors.New(
-					"range option must be like below form :\n" +
-						"{\n" +
-						"  from         : \"[0-9]+\", \n" +
-						"  to           : \"[0-9]+\", \n" +
-						"  warningLevel : \"[0-9]+\" \n" +
-						"}")
-			}
-			if isOverlapRange {
-
 			}
 
 		}
