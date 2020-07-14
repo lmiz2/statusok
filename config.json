@@ -28,8 +28,8 @@
                                 "warningLevel" : "0"
                             },
                             {
-                                "from" : "30",
-                                "lessthan" : "60",
+                                "from" : "31",
+                                "to" : "60",
                                 "warningLevel" : "1"
                             }
                         ]

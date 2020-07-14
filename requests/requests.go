@@ -61,8 +61,6 @@ type AdvancedOption struct {
 type WarningLevelRangeOption struct {
 	From         string `json:"from"`
 	To           string `json:"to"`
-	Over         string `json:"over"`
-	Lessthan     string `json:"lessthan"`
 	WarningLevel string `json:"warningLevel"`
 }
 
@@ -115,27 +113,38 @@ func (requestConfig *RequestConfig) Validate() error {
 			// if(advMap["matchCount"] == ""){
 			// 	return errors.New("matchCount cannot be Zero or")
 			// }
-			isValidRange := true
+			isInvalidRange := false
+			isOverlapRange := false
+			rangeValueMap := make(map[int]string)
 			for i, rangeMap := range advMap.WarningLevelRanges {
-				fmt.Printf("%d : %+v", i, rangeMap)
-				if isNumber(rangeMap.From) == isNumber(rangeMap.Over) {
-					isValidRange = false
-				} else if isNumber(rangeMap.To) == isNumber(rangeMap.Lessthan) {
-					isValidRange = false
-				} else if !isNumber(rangeMap.WarningLevel) {
-					isValidRange = false
+				if !isNumber(rangeMap.From) || !isNumber(rangeMap.To) || !isNumber(rangeMap.WarningLevel) {
+					isInvalidRange = true
+					break
 				}
-				// TODO : 작은값 ~ 큰값순으로 입력되는지 validation하기.
+
+				fromVal, _ := strconv.Atoi(rangeMap.From)
+				toVal, _ := strconv.Atoi(rangeMap.To)
+				for j := fromVal; j <= toVal; j++ {
+					if rangeValueMap[j] != "" {
+						return errors.New("range value Overlaped : " + strconv.Itoa(j))
+					} else {
+						rangeValueMap[j] = strconv.Itoa(i)
+					}
+				}
 			}
-			if !isValidRange {
+			if isInvalidRange {
 				return errors.New(
 					"range option must be like below form :\n" +
 						"{\n" +
-						"  [from|over] : \"[0-9]+\", \n" +
-						"  [to|lessthan] : \"[0-9]+\", \n" +
-						"  warningLevel : [0-9]+ \n" +
+						"  from         : \"[0-9]+\", \n" +
+						"  to           : \"[0-9]+\", \n" +
+						"  warningLevel : \"[0-9]+\" \n" +
 						"}")
 			}
+			if isOverlapRange {
+
+			}
+
 		}
 
 	}
