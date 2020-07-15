@@ -88,6 +88,7 @@ func (influxDb InfluxDb) AddRequestInfo(requestInfo RequestInfo) error {
 		"responseTime": requestInfo.ResponseTime,
 		"responseCode": requestInfo.ResponseCode,
 		"responseBody": requestInfo.ResponseBody,
+		"warningLevel": requestInfo.WarningLevel,
 	}
 
 	bps, err := client.NewBatchPoints(client.BatchPointsConfig{
@@ -133,6 +134,7 @@ func (influxDb InfluxDb) AddErrorInfo(errorInfo ErrorInfo) error {
 		"responseBody": errorInfo.ResponseBody,
 		"responseCode": errorInfo.ResponseCode,
 		"otherInfo":    errorInfo.OtherInfo,
+		"warningLevel": errorInfo.WarningLevel,
 	}
 
 	point, err := client.NewPoint(

@@ -1,7 +1,6 @@
 package requests
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -39,22 +38,23 @@ const (
 )
 
 type RequestConfig struct {
-	Id           int
-	Url          string            `json:"url"`
-	RequestType  string            `json:"requestType"`
-	Headers      map[string]string `json:"headers"`
-	FormParams   map[string]string `json:"formParams"`
-	UrlParams    map[string]string `json:"urlParams"`
-	ResponseCode int               `json:"responseCode"`
-	ResponseTime int64             `json:"responseTime"`
-	CheckEvery   time.Duration     `json:"checkEvery"`
-	AdvancedOpt  []AdvancedOption  `json:"Advanced"`
+	Id                    int
+	Url                   string            `json:"url"`
+	RequestType           string            `json:"requestType"`
+	Headers               map[string]string `json:"headers"`
+	FormParams            map[string]string `json:"formParams"`
+	UrlParams             map[string]string `json:"urlParams"`
+	ResponseCode          int               `json:"responseCode"`
+	ResponseTime          int64             `json:"responseTime"`
+	CheckEvery            time.Duration     `json:"checkEvery"`
+	AdvancedOpt           []AdvancedOption  `json:"Advanced"`
+	FailedReqWarningLevel int               `json:"FailedRequestWarningLevel"`
+	SaveBodyAlways        string            `json:"saveRequestBodyAlways"`
 }
 
 type AdvancedOption struct {
 	CheckType          string                    `json:"checkType"`
 	MatchExpression    string                    `json:"matchExpression"`
-	SaveBodyAlways     string                    `json:"saveBodyAlways"`
 	WarningLevelRanges []WarningLevelRangeOption `json:"warningLevelRanges"`
 }
 
@@ -333,26 +333,7 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 
 	getResponse, respErr := client.Do(request)
 
-	//get ResponseBody shs
 	var bodystr string = convertResponseToString(getResponse)
-	var saveBodyStr = ""
-	var mtCnt = 0
-
-	for _, advMap := range requestConfig.AdvancedOpt {
-		mtCnt = strings.Count(bodystr, advMap.MatchExpression)
-		if advMap.SaveBodyAlways == "true" {
-			saveBodyStr = bodystr
-		}
-		fmt.Printf("\"%s\" match count : %d\n", advMap.MatchExpression, mtCnt)
-	}
-
-	f, errf := os.OpenFile("./requestbody.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, os.FileMode(0644))
-	if errf != nil {
-		panic(errf)
-	}
-	br := bufio.NewWriter(f)
-	br.WriteString(bodystr)
-	br.Flush()
 
 	if respErr != nil {
 		//Request failed . Add error info to database
@@ -370,6 +351,7 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 			ResponseBody: bodystr,
 			Reason:       database.ErrDoRequest,
 			OtherInfo:    respErr.Error(),
+			WarningLevel: requestConfig.FailedReqWarningLevel,
 		})
 		return respErr
 	}
@@ -386,11 +368,54 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 			ResponseBody: bodystr,
 			Reason:       errResposeCode(getResponse.StatusCode, requestConfig.ResponseCode),
 			OtherInfo:    "",
+			WarningLevel: requestConfig.FailedReqWarningLevel,
 		})
 		return errResposeCode(getResponse.StatusCode, requestConfig.ResponseCode)
 	}
 
 	elapsed := time.Since(start)
+
+	var saveBodyStr = ""
+	var mtCnt = 0
+
+	if requestConfig.SaveBodyAlways == "true" {
+		saveBodyStr = bodystr
+	}
+
+	var warningLevel = 0
+	for _, advMap := range requestConfig.AdvancedOpt {
+		if advMap.CheckType == checkContains {
+			mtCnt = strings.Count(bodystr, advMap.MatchExpression)
+		} else if advMap.CheckType == checkRegularExp {
+			// TODO : Regex check
+
+		}
+
+		if len(advMap.WarningLevelRanges) > 0 {
+			for _, rangeMap := range advMap.WarningLevelRanges {
+				fromVal, _ := strconv.Atoi(rangeMap.From)
+				toVal, _ := strconv.Atoi(rangeMap.To)
+				if mtCnt >= fromVal && mtCnt <= toVal {
+					wl, _ := strconv.Atoi(rangeMap.WarningLevel)
+					warningLevel = wl
+					break
+				}
+			}
+		} else {
+			if mtCnt > 0 {
+				warningLevel = 1
+			}
+		}
+		fmt.Printf("\"%s\" match count : %d\n", advMap.MatchExpression, mtCnt)
+	}
+
+	// f, errf := os.OpenFile("./requestbody.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, os.FileMode(0644))
+	// if errf != nil {
+	// 	panic(errf)
+	// }
+	// br := bufio.NewWriter(f)
+	// br.WriteString(bodystr)
+	// br.Flush()
 
 	//Request succesfull . Add infomartion to Database
 	go database.AddRequestInfo(database.RequestInfo{
@@ -401,6 +426,7 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 		ResponseBody:         saveBodyStr,
 		ResponseTime:         elapsed.Nanoseconds() / 1000000,
 		ExpectedResponseTime: requestConfig.ResponseTime,
+		WarningLevel:         warningLevel,
 	})
 
 	return nil

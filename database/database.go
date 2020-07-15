@@ -35,6 +35,7 @@ type RequestInfo struct {
 	ResponseBody         string
 	ResponseTime         int64
 	ExpectedResponseTime int64
+	WarningLevel         int
 }
 
 type ErrorInfo struct {
@@ -45,6 +46,7 @@ type ErrorInfo struct {
 	ResponseBody string
 	Reason       error
 	OtherInfo    string
+	WarningLevel int
 }
 
 type Database interface {
@@ -122,9 +124,9 @@ func addTestErrorAndRequestInfo() {
 
 	println("Adding Test data to your database ....")
 
-	requestInfo := RequestInfo{0, "http://test.com", "GET", 0, "", 0, 0}
+	requestInfo := RequestInfo{0, "http://test.com", "GET", 0, "", 0, 0, 0}
 
-	errorInfo := ErrorInfo{0, "http://test.com", "GET", 0, "test response", errors.New("test error"), "test other info"}
+	errorInfo := ErrorInfo{0, "http://test.com", "GET", 0, "test response", errors.New("test error"), "test other info", -1}
 
 	for _, db := range dbList {
 		reqErr := db.AddRequestInfo(requestInfo)
