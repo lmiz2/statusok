@@ -38,30 +38,30 @@ const (
 )
 
 type RequestConfig struct {
-	Id                    int
-	Url                   string            `json:"url"`
-	RequestType           string            `json:"requestType"`
-	Headers               map[string]string `json:"headers"`
-	FormParams            map[string]string `json:"formParams"`
-	UrlParams             map[string]string `json:"urlParams"`
-	ResponseCode          int               `json:"responseCode"`
-	ResponseTime          int64             `json:"responseTime"`
-	CheckEvery            time.Duration     `json:"checkEvery"`
-	AdvancedOpt           []AdvancedOption  `json:"Advanced"`
-	FailedReqWarningLevel int               `json:"FailedRequestWarningLevel"`
-	SaveBodyAlways        string            `json:"saveRequestBodyAlways"`
+	Id                  int
+	Url                 string            `json:"url"`
+	RequestType         string            `json:"requestType"`
+	Headers             map[string]string `json:"headers"`
+	FormParams          map[string]string `json:"formParams"`
+	UrlParams           map[string]string `json:"urlParams"`
+	ResponseCode        int               `json:"responseCode"`
+	ResponseTime        int64             `json:"responseTime"`
+	CheckEvery          time.Duration     `json:"checkEvery"`
+	AdvancedOpt         []AdvancedOption  `json:"Advanced"`
+	FailedReqAlertLevel int               `json:"FailedRequestAlertLevel"`
+	SaveBodyAlways      string            `json:"saveRequestBodyAlways"`
 }
 
 type AdvancedOption struct {
-	CheckType          string                    `json:"checkType"`
-	MatchExpression    string                    `json:"matchExpression"`
-	WarningLevelRanges []WarningLevelRangeOption `json:"warningLevelRanges"`
+	CheckType        string                  `json:"checkType"`
+	MatchExpression  string                  `json:"matchExpression"`
+	AlertLevelRanges []AlertLevelRangeOption `json:"alertLevelRanges"`
 }
 
-type WarningLevelRangeOption struct {
-	From         string `json:"from"`
-	To           string `json:"to"`
-	WarningLevel string `json:"warningLevel"`
+type AlertLevelRangeOption struct {
+	From       string `json:"from"`
+	To         string `json:"to"`
+	AlertLevel string `json:"alertLevel"`
 }
 
 //Set Id for request
@@ -112,14 +112,14 @@ func (requestConfig *RequestConfig) Validate() error {
 			}
 
 			rangeValueMap := make(map[int]string)
-			for i, rangeMap := range advMap.WarningLevelRanges {
-				if !isNumber(rangeMap.From) || !isNumber(rangeMap.To) || !isNumber(rangeMap.WarningLevel) {
+			for i, rangeMap := range advMap.AlertLevelRanges {
+				if !isNumber(rangeMap.From) || !isNumber(rangeMap.To) || !isNumber(rangeMap.AlertLevel) {
 					return errors.New(
 						"range option must be like below form :\n" +
 							"{\n" +
 							"  from         : \"[0-9]+\", \n" +
 							"  to           : \"[0-9]+\", \n" +
-							"  warningLevel : \"[0-9]+\" \n" +
+							"  alertLevel : \"[0-9]+\" \n" +
 							"}")
 				}
 
@@ -351,7 +351,7 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 			ResponseBody: bodystr,
 			Reason:       database.ErrDoRequest,
 			OtherInfo:    respErr.Error(),
-			WarningLevel: requestConfig.FailedReqWarningLevel,
+			AlertLevel:   requestConfig.FailedReqAlertLevel,
 		})
 		return respErr
 	}
@@ -368,7 +368,7 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 			ResponseBody: bodystr,
 			Reason:       errResposeCode(getResponse.StatusCode, requestConfig.ResponseCode),
 			OtherInfo:    "",
-			WarningLevel: requestConfig.FailedReqWarningLevel,
+			AlertLevel:   requestConfig.FailedReqAlertLevel,
 		})
 		return errResposeCode(getResponse.StatusCode, requestConfig.ResponseCode)
 	}
@@ -382,7 +382,7 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 		saveBodyStr = bodystr
 	}
 
-	var warningLevel = 0
+	var alertLevel = 0
 	for _, advMap := range requestConfig.AdvancedOpt {
 		if advMap.CheckType == checkContains {
 			mtCnt = strings.Count(bodystr, advMap.MatchExpression)
@@ -391,19 +391,20 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 
 		}
 
-		if len(advMap.WarningLevelRanges) > 0 {
-			for _, rangeMap := range advMap.WarningLevelRanges {
+		if len(advMap.AlertLevelRanges) > 0 {
+			for _, rangeMap := range advMap.AlertLevelRanges {
 				fromVal, _ := strconv.Atoi(rangeMap.From)
 				toVal, _ := strconv.Atoi(rangeMap.To)
 				if mtCnt >= fromVal && mtCnt <= toVal {
-					wl, _ := strconv.Atoi(rangeMap.WarningLevel)
-					warningLevel = wl
-					break
+					wl, _ := strconv.Atoi(rangeMap.AlertLevel)
+					if wl > alertLevel {
+						alertLevel = wl
+					}
 				}
 			}
 		} else {
 			if mtCnt > 0 {
-				warningLevel = 1
+				alertLevel = 1
 			}
 		}
 		fmt.Printf("\"%s\" match count : %d\n", advMap.MatchExpression, mtCnt)
@@ -426,7 +427,7 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 		ResponseBody:         saveBodyStr,
 		ResponseTime:         elapsed.Nanoseconds() / 1000000,
 		ExpectedResponseTime: requestConfig.ResponseTime,
-		WarningLevel:         warningLevel,
+		AlertLevel:           alertLevel,
 	})
 
 	return nil

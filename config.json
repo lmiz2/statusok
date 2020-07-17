@@ -17,22 +17,22 @@
                 "headers":{
                     "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
                 }
-                ,"FailedRequestWarningLevel" : -1
+                ,"FailedRequestAlertLevel" : -1
                 ,"SaveBodyAlways" : "true"
                 ,"Advanced":[
                     {
                         "checkType" : "contains",
                         "matchExpression" : "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\" defer></script>",
-                        "warningLevelRanges" : [
+                        "alertLevelRanges" : [
                             {
                                 "from" : "0",
                                 "to"   : "31",
-                                "warningLevel" : "0"
+                                "alertLevel" : "0"
                             },
                             {
                                 "from" : "32",
                                 "to" : "60",
-                                "warningLevel" : "1"
+                                "alertLevel" : "1"
                             }
                         ]
                     },

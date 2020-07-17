@@ -35,7 +35,7 @@ type RequestInfo struct {
 	ResponseBody         string
 	ResponseTime         int64
 	ExpectedResponseTime int64
-	WarningLevel         int
+	AlertLevel           int
 }
 
 type ErrorInfo struct {
@@ -46,7 +46,7 @@ type ErrorInfo struct {
 	ResponseBody string
 	Reason       error
 	OtherInfo    string
-	WarningLevel int
+	AlertLevel   int
 }
 
 type Database interface {
