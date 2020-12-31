@@ -1,0 +1,253 @@
+{
+    "database":{
+        "influxDb":{
+            "host":"influxdb",
+            "port":8086,
+            "databaseName":"statusok",
+            "username":"user",
+            "password":""
+        }
+    },
+        "requests":[
+            {
+                "url":"https://m.lalavla.com/service/main/main.html",
+                "requestType":"GET",
+                "checkEvery":10,    
+                "responseTime":800,
+                "headers":{
+                    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+                }
+                ,"FailedRequestAlertLevel" : -1
+                ,"SaveBodyAlways" : "true"
+                ,"Advanced":[
+                    {
+                        "checkType" : "contains",
+                        "matchExpression" : "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\" defer></script>",
+                        "alertLevelRanges" : [
+                            {
+                                "from" : "0",
+                                "to"   : "31",
+                                "alertLevel" : "0"
+                            },
+                            {
+                                "from" : "32",
+                                "to" : "60",
+                                "alertLevel" : "1"
+                            }
+                        ]
+                    },
+                    {
+                        "checkType" : "contains",
+                        "matchExpression" : "<script src=\"//jscdn.appier.net/aa.js?id=gsretail.com\"  22 defer></script>"
+                    }
+                ]
+            },
+            {
+                "url":"https://api.lalavla.com/api/prd/product/list/best",
+                "requestType":"POST",
+                "checkEvery":10,    
+                "responseTime":800,
+                "headers":{
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+                }
+                ,"Advanced":[
+                    {
+                    "checkType" : "contains",
+                    "matchExpression" : "BUY_LIMIT"
+                    }
+                ]
+                ,"formParams":{
+                    "BRND_ID": "",
+                    "CTG_ID": "C000000",
+                    "END_NUM": "20",
+                    "SORT_STD": "F",
+                    "START_NUM": "1"
+                }
+            },
+            {
+                "_comment" : "[GS fresh] GS fresh 모바일",
+                "url":"http://m.gsfresh.com/eretail.main.dev",
+                "requestType":"GET",
+                "checkEvery":30,
+                "responseTime":600
+            },
+            {
+                "_comment" : "[GS fresh] 온라인센터TMS 모바일",
+                "url":"http://imtms.gsretail.com/session/login/Init.do",
+                "requestType":"GET",
+                "responseCode":200,
+                "checkEvery":60,
+                "responseTime":600
+            },
+            {
+                "_comment" : "[GS fresh] SK Tmap API, body값을 보내야하나 body에 대한 정의가 없어 body없이 보냄. body없을 시 응답값은 400",
+                "url":"https://api2.sktelecom.com/tmap/routes/prediction",
+                "requestType":"POST",
+                "headers":{
+                    "Accept":"application/json",
+                    "Content-Type":"application/json",
+                    "appKey":"d445fe8a-5ce6-4120-a48c-78249ec04259",
+                    "version":"1",
+                    "reqCoordType":"WGS84GEO",
+                    "resCoordType":"WGS84GEO",
+                    "format":"XML",
+                    "charset":"UTF-8"
+                },
+                "responseCode":400,
+                "checkEvery":300,
+                "responseTime":1000
+            },
+            {
+                "_comment" : "[GS fresh] TDS 웹",
+                "url":"https://tds.gsretail.com:7443/loginForm.do",
+                "requestType":"GET",
+                "checkEvery":60,
+                "responseTime":600
+            },
+            {
+                "_comment" : "[GS fresh] KT안심번호서비스",
+                "url":"https://safety.bzm.kr/CustomerAPI/beforeRegister.do",
+                "requestType":"POST",
+                "urlParams":{
+                    "HID":"H2008",
+                    "HIDPWD":"0000",
+                    "CFNum1":"01071790610"
+                },
+                "responseCode":200,
+                "checkEvery":300,
+                "responseTime":1000
+            },
+            {
+                "_comment" : "[GS fresh] 네이버 지도 API",
+                "url":"https://openapi.map.naver.com/openapi/v3/maps.js",
+                "requestType":"GET",
+                "urlParams":{
+                    "ncpClientId":"j9o8yv19qb"
+                },
+                "responseCode":200,
+                "checkEvery":300,
+                "responseTime":1000
+            },
+            {
+                "_comment" : "[GS fresh] 굿스플로 배송지키미",
+                "url":"http://ws1.goodsflow.com/trace/WsCommon/GSTDSService.asmx",
+                "requestType":"GET",
+                "headers":{
+                    "op":"CheckInvoiceNo",
+                    "Content-Type":"text/xml; charset=utf-8",
+                    "SOAPAction":"http://goodsflow.com/webservice/CheckInvoiceNo"
+                },
+                "responseCode":200,
+                "checkEvery":300,
+                "responseTime":1000
+            },
+            {
+                "_comment" : "[GS fresh] 굿스플로 송장등록",
+                "url":"https://pr1.goodsflow.com/delivery/api/v2/orders/partner/GSRESUPER",
+                "requestType":"GET",
+                "responseCode":200,
+                "checkEvery":300,
+                "responseTime":1000
+            },
+            {
+                "_comment" : "[GS Fresh] 주소검색",
+                "url":"https://spi.maps.daum.net/postcode/search",
+                "requestType":"GET",
+                "urlParams":{
+                    "origin":"https%3A%2F%2Fm.gsfresh.com",
+                    "indaum":"off",
+                    "banner":"on",
+                    "mode":"transmit",
+                    "vt":"layer",
+                    "am":"on",
+                    "ani":"off",
+                    "sd":"off",
+                    "fi":"on",
+                    "fc":"on",
+                    "plrgt":"1.5",
+                    "hmb":"off",
+                    "heb":"off",
+                    "asea":"off",
+                    "smh":"off",
+                    "zo":"on",
+                    "us":"on",
+                    "msi":"10",
+                    "ahs":"off",
+                    "whas":"500",
+                    "sm":"on",
+                    "a51":"off",
+                    "zn":"Y",
+                    "fullpath":"%2Feretail.mypage.initMyStoreRegister.dev"
+                },
+                "responseCode":200,
+                "checkEvery":300,
+                "responseTime":1000
+            },
+            {
+                "_comment" : "[나냉] 나만의 냉장고 모바일",
+                "url":"https://gs25app.gsretail.com:5443/mMyicebox2/view/shopping/ASHP_ShpHomeInq.jsp",
+                "requestType":"GET",
+                "responseCode":200,
+                "checkEvery":30,
+                "responseTime":600
+            },
+            {
+                "_comment" : "[나냉] 굿스플로",
+                "url":"http://b2c.goodsflow.com/gstds/Whereis.aspx",
+                "requestType":"GET",
+                "responseCode":200,
+                "checkEvery":300,
+                "responseTime":1000
+            },
+            {
+                "_comment" : "[랄블] 랄라블라 모바일",
+                "url":"https://m.lalavla.com/service/main/main.html",
+                "requestType":"GET",
+                "responseCode":200,
+                "checkEvery":30,
+                "responseTime":600
+            },
+            {
+                "_comment" : "[GS THE FRESH] 수퍼마켓 앱 WAS",
+                "url":"https://m.gssuper.com:7643/app/gate",
+                "requestType":"GET",
+                "responseCode":200,
+                "checkEvery":30,
+                "responseTime":600
+            },
+            {
+                "_comment" : "[GS THE FRESH] 스마일페이",
+                "url":"https://www.mysmilepay.com/",
+                "requestType":"GET",
+                "responseCode":200,
+                "checkEvery":300,
+                "responseTime":1000
+            },
+            {
+                "_comment" : "[GS THE FRESH, 나냉] 모바일팝 바코드 조회",
+                "url":"http://pop.prepaidcard.co.kr/v2/api/gw/externalpay/pub/getbalance.do",
+                "requestType":"GET",
+                "urlParams":{
+                    "serviceId":"S0000015",
+                    "reqParam":"B%2BWhTddesKNDw/Rg6/TVnjbxf7BRKEymkYNKlbbOKAs2RQs8mqRaBv2RyNnnJh%2BdC3qZGW%2BNS0gKx3DSll3cAj0UWFpH4jAkAv/uqFDoyEajGH3CUrRKhYM/ngncmLpwzE1TXz9lcBRtpcgfbo3F6ihNm4Itikg07cLhvIFw7RwuRrtJX2FIh/%2BJR0IyJXx0moRlVcqCKQF5z1cfI6yJK4W2MwjY4XaKtz1eNLH2Bew%3D"
+                },
+                "responseCode":200,
+                "checkEvery":300,
+                "responseTime":1000
+            },
+            {
+                "_comment" : "[GS THE FRESH, 나냉] 카카오지도",
+                "url":"https://dapi.kakao.com/v2/maps/sdk.js",
+                "requestType":"GET",
+                "urlParams":{
+                    "appkey":"8916ce4e09e628140bfb1d377f2de38e",
+                    "libraries":"services"
+                },
+                "responseCode":200,
+                "checkEvery":300,
+                "responseTime":1000
+            }
+        ]
+    }
+    

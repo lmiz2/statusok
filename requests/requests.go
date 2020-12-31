@@ -5,13 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sanathp/statusok/database"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/sanathp/statusok/database"
 )
 
 var (
@@ -26,21 +29,39 @@ const (
 	FormContentType = "application/x-www-form-urlencoded"
 	JsonContentType = "application/json"
 
+	checkContains   = "contains"
+	checkRegularExp = "regex"
+
 	DefaultTime         = "300s"
 	DefaultResponseCode = http.StatusOK
 	DefaultConcurrency  = 1
 )
 
 type RequestConfig struct {
-	Id           int
-	Url          string            `json:"url"`
-	RequestType  string            `json:"requestType"`
-	Headers      map[string]string `json:"headers"`
-	FormParams   map[string]string `json:"formParams"`
-	UrlParams    map[string]string `json:"urlParams"`
-	ResponseCode int               `json:"responseCode"`
-	ResponseTime int64             `json:"responseTime"`
-	CheckEvery   time.Duration     `json:"checkEvery"`
+	Id                  int
+	Url                 string            `json:"url"`
+	RequestType         string            `json:"requestType"`
+	Headers             map[string]string `json:"headers"`
+	FormParams          map[string]string `json:"formParams"`
+	UrlParams           map[string]string `json:"urlParams"`
+	ResponseCode        int               `json:"responseCode"`
+	ResponseTime        int64             `json:"responseTime"`
+	CheckEvery          time.Duration     `json:"checkEvery"`
+	AdvancedOpt         []AdvancedOption  `json:"Advanced"`
+	FailedReqAlertLevel int               `json:"FailedRequestAlertLevel"`
+	SaveBodyAlways      string            `json:"saveRequestBodyAlways"`
+}
+
+type AdvancedOption struct {
+	CheckType        string                  `json:"checkType"`
+	MatchExpression  string                  `json:"matchExpression"`
+	AlertLevelRanges []AlertLevelRangeOption `json:"alertLevelRanges"`
+}
+
+type AlertLevelRangeOption struct {
+	From       string `json:"from"`
+	To         string `json:"to"`
+	AlertLevel string `json:"alertLevel"`
 }
 
 //Set Id for request
@@ -76,10 +97,61 @@ func (requestConfig *RequestConfig) Validate() error {
 		requestConfig.CheckEvery = defTime
 	}
 
+	// validation for advanced settings
+	for i, advMap := range requestConfig.AdvancedOpt {
+		if advMap.CheckType == "" || (advMap.CheckType != checkContains && advMap.CheckType != checkRegularExp) {
+			return errors.New("invalid CheckType. CheckType must be \"" + checkContains + "\" or \"" + checkRegularExp + "\"")
+		} else {
+			if advMap.MatchExpression == "" {
+				return errors.New("MatchExpression cannot be empty")
+			}
+			if advMap.CheckType == checkContains {
+				fmt.Printf("%s #%d set Advanced option : %s\n", requestConfig.Url, i, checkContains)
+			} else if advMap.CheckType == checkRegularExp {
+				fmt.Printf("%s #%d set Advanced option : %s\n", requestConfig.Url, i, checkRegularExp)
+			}
+
+			rangeValueMap := make(map[int]string)
+			for i, rangeMap := range advMap.AlertLevelRanges {
+				if !isNumber(rangeMap.From) || !isNumber(rangeMap.To) || !isNumber(rangeMap.AlertLevel) {
+					return errors.New(
+						"range option must be like below form :\n" +
+							"{\n" +
+							"  from         : \"[0-9]+\", \n" +
+							"  to           : \"[0-9]+\", \n" +
+							"  alertLevel : \"[0-9]+\" \n" +
+							"}")
+				}
+
+				fromVal, _ := strconv.Atoi(rangeMap.From)
+				toVal, _ := strconv.Atoi(rangeMap.To)
+
+				if fromVal >= toVal {
+					return errors.New("from value must be greater than to value")
+				}
+
+				for j := fromVal; j <= toVal; j++ {
+					if rangeValueMap[j] != "" {
+						return errors.New("range value Overlapped on " + strconv.Itoa(j))
+					} else {
+						rangeValueMap[j] = strconv.Itoa(i)
+					}
+				}
+			}
+
+		}
+
+	}
+
 	return nil
 }
 
-//Initialize data from config file and check all requests
+func isNumber(str string) bool {
+	match, _ := regexp.Match("^[0-9]+$", []byte(str))
+	return match
+}
+
+//RequestsInit Initialize data from config file and check all requests
 func RequestsInit(data []RequestConfig, concurrency int) {
 	RequestsList = data
 
@@ -128,6 +200,7 @@ func StartMonitoring() {
 	go listenToRequestChannel()
 
 	for _, requestConfig := range RequestsList {
+		// fmt.Print("requestConfig : ", requestConfig) // config parsing debuging
 		go createTicker(requestConfig)
 	}
 }
@@ -260,6 +333,8 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 
 	getResponse, respErr := client.Do(request)
 
+	var bodystr string = convertResponseToString(getResponse)
+
 	if respErr != nil {
 		//Request failed . Add error info to database
 		var statusCode int
@@ -273,9 +348,10 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 			Url:          requestConfig.Url,
 			RequestType:  requestConfig.RequestType,
 			ResponseCode: statusCode,
-			ResponseBody: convertResponseToString(getResponse),
+			ResponseBody: bodystr,
 			Reason:       database.ErrDoRequest,
 			OtherInfo:    respErr.Error(),
+			AlertLevel:   requestConfig.FailedReqAlertLevel,
 		})
 		return respErr
 	}
@@ -289,14 +365,58 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 			Url:          requestConfig.Url,
 			RequestType:  requestConfig.RequestType,
 			ResponseCode: getResponse.StatusCode,
-			ResponseBody: convertResponseToString(getResponse),
+			ResponseBody: bodystr,
 			Reason:       errResposeCode(getResponse.StatusCode, requestConfig.ResponseCode),
 			OtherInfo:    "",
+			AlertLevel:   requestConfig.FailedReqAlertLevel,
 		})
 		return errResposeCode(getResponse.StatusCode, requestConfig.ResponseCode)
 	}
 
 	elapsed := time.Since(start)
+
+	var saveBodyStr = ""
+	var mtCnt = 0
+
+	if requestConfig.SaveBodyAlways == "true" {
+		saveBodyStr = bodystr
+	}
+
+	var alertLevel = 0
+	for _, advMap := range requestConfig.AdvancedOpt {
+		if advMap.CheckType == checkContains {
+			mtCnt = strings.Count(bodystr, advMap.MatchExpression)
+		} else if advMap.CheckType == checkRegularExp {
+			// TODO : Regex check
+
+		}
+
+		if len(advMap.AlertLevelRanges) > 0 {
+			for _, rangeMap := range advMap.AlertLevelRanges {
+				fromVal, _ := strconv.Atoi(rangeMap.From)
+				toVal, _ := strconv.Atoi(rangeMap.To)
+				if mtCnt >= fromVal && mtCnt <= toVal {
+					wl, _ := strconv.Atoi(rangeMap.AlertLevel)
+					if wl > alertLevel {
+						alertLevel = wl
+					}
+				}
+			}
+		} else {
+			if mtCnt > 0 {
+				alertLevel = 1
+			}
+		}
+		fmt.Printf("\"%s\" match count : %d\n", advMap.MatchExpression, mtCnt)
+	}
+
+	// f, errf := os.OpenFile("./requestbody.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, os.FileMode(0644))
+	// if errf != nil {
+	// 	panic(errf)
+	// }
+	// br := bufio.NewWriter(f)
+	// br.WriteString(bodystr)
+	// br.Flush()
 
 	//Request succesfull . Add infomartion to Database
 	go database.AddRequestInfo(database.RequestInfo{
@@ -304,8 +424,10 @@ func PerformRequest(requestConfig RequestConfig, throttle chan int) error {
 		Url:                  requestConfig.Url,
 		RequestType:          requestConfig.RequestType,
 		ResponseCode:         getResponse.StatusCode,
+		ResponseBody:         saveBodyStr,
 		ResponseTime:         elapsed.Nanoseconds() / 1000000,
 		ExpectedResponseTime: requestConfig.ResponseTime,
+		AlertLevel:           alertLevel,
 	})
 
 	return nil
@@ -322,7 +444,6 @@ func convertResponseToString(resp *http.Response) string {
 	if bufErr != nil {
 		return " "
 	}
-
 	return buf.String()
 }
 
