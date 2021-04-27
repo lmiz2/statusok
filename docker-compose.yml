@@ -12,6 +12,9 @@ services:
     ports:
       - 3000:3000
   statusok:
-    build: .
+    image: status-ok-img:0.3
+    # build: 
+    #   context: .
+    #   dockerfile: Dockerfile
     depends_on:
       - influxdb

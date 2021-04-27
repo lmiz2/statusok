@@ -24,7 +24,7 @@ spec:
         io.kompose.service: statusok
     spec:
       containers:
-        - image: status-ok-img:0.1
+        - image: status-ok-img:0.3
           name: statusok
           resources: {}
       restartPolicy: Always

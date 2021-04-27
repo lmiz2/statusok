@@ -2,7 +2,7 @@
     "database":{
         "influxDb":{
             "host":"influxdb",
-            "port":8096,
+            "port":8086,
             "databaseName":"statusok",
             "username":"user",
             "password":""
