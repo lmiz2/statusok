@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: status-ok-deployment
+  labels:
+    app: status-ok
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: status-ok
+  template:
+    metadata:
+      labels:
+        app: status-ok
+    spec:
+      containers:
+        - name: status-ok
+          image: status-ok-img:0.1
+          ports:
+            - containerPort: 8081
